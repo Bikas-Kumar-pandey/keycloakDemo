@@ -1,0 +1,122 @@
+download keycloak server
+go to = C:\Users\Bikas\Desktop\keycloakServer\keycloak-21.1.2\bin
+open cmd = kc.bat start-dev
+http://localhost:8080/
+
+steps to follow to create realm and user
+ https://javainfinite.com/spring-boot/integrate-spring-boot-with-keycloak-example/
+
+ if 1st time opened keycloak then
+ username = bikas
+ password = bikas
+
+
+Add realm
+   javainfinateapp
+
+clients
+    create -> client-id(javainfinit-client)
+    client -protocol = openid-connect
+    access type = confidential
+    valid Redirect URIs = ( This is a mandatory field for the client, here we will set the URI with server and port of our spring boot application )
+    http://localhost:9091/*
+
+    create a role
+    add user
+    mapp user with role
+
+
+
+
+    IN SPRINBOOT APPLICATION
+
+    add dpenedency
+
+
+    <dependency>
+    			<groupId>org.springframework.boot</groupId>
+    			<artifactId>spring-boot-starter-security</artifactId>
+    		</dependency>
+    <!-- https://mvnrepository.com/artifact/org.keycloak/keycloak-spring-boot-starter -->
+
+    		<dependency>
+    			<groupId>org.keycloak</groupId>
+    			<artifactId>keycloak-spring-boot-starter</artifactId>
+    			<version>15.0.2</version>
+    		</dependency>
+
+in Application.properties
+
+keycloak.realm=javainfiniteapp
+keycloak.auth-server-url=http://localhost:8080
+keycloak.resource=javainfinite-client
+keycloak.credentials.secret=Afg7GGxqXXRg0tEJq6XCyfFP3RJ0dREO
+keycloak.use-resource-role-mappings=true
+server.port=9091
+
+go to keycloak -> credintials -> clients -> secret key
+
+
+keycloak config
+
+package com.javainfinite.keycloack.security;
+
+import org.keycloak.adapters.springsecurity.KeycloakConfiguration;
+import org.keycloak.adapters.springsecurity.authentication.KeycloakAuthenticationProvider;
+import org.keycloak.adapters.springsecurity.config.KeycloakWebSecurityConfigurerAdapter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+
+@KeycloakConfiguration
+public class KeycloakSecurity extends KeycloakWebSecurityConfigurerAdapter {
+
+    @Bean
+    @Override
+    protected SessionAuthenticationStrategy sessionAuthenticationStrategy() {
+        return new RegisterSessionAuthenticationStrategy(
+                new SessionRegistryImpl());
+    }
+
+     @Override
+    protected void configure(HttpSecurity http) throws Exception {
+         super.configure(http);
+        http.authorizeRequests()
+                .antMatchers("/homepage").hasRole("standard")
+                .anyRequest().permitAll();
+        http.csrf().disable();
+    }
+
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        KeycloakAuthenticationProvider keycloakAuthenticationProvider = keycloakAuthenticationProvider();
+        keycloakAuthenticationProvider.setGrantedAuthoritiesMapper(new SimpleAuthorityMapper());
+        auth.authenticationProvider(keycloakAuthenticationProvider);
+    }
+
+
+keycloak security config.
+
+package com.keycloak.security;
+
+
+import org.keycloak.adapters.KeycloakConfigResolver;
+import org.keycloak.adapters.springboot.KeycloakSpringBootConfigResolver;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class KeycloakConfigurationResolver {
+
+    @Bean
+    public KeycloakConfigResolver KeycloakConfigResolver() {
+        return new KeycloakSpringBootConfigResolver();
+    }
+}
+
+
